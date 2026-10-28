@@ -3591,7 +3591,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
-  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, setDoc, writeBatch }
+  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, setDoc, writeBatch, getDoc, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -3679,7 +3679,7 @@
   const lockEl = document.createElement('div');
   lockEl.id = 'license-lock';
   lockEl.className = 'no-print';
-  lockEl.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:"Hind Siliguri",Inter,system-ui,sans-serif';
+  lockEl.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f172a;color:#fff;display:flex;overflow-y:auto;text-align:center;padding:24px;font-family:"Hind Siliguri",Inter,system-ui,sans-serif';
   document.body.appendChild(lockEl);
 
   const chip = document.createElement('div');
@@ -3690,15 +3690,155 @@
   let shopInfo = null, started = false, needReload = false;
   const fmtDate = ms => new Date(ms).toLocaleDateString('bn-BD', { dateStyle: 'long' });
 
-  function showLock(icon, title, msg) {
+  /* ---------- পেমেন্ট (বিকাশ / নগদ / রকেট / ব্যাংক) ---------- */
+  let payCfg = null, payReq = null, payUnsub = null;
+  const chosen = { plan: 0, method: 0 };
+  const PAY_KEY = 'clothpos_pay_' + SHOP;
+
+  async function loadPayCfg() {
+    try {
+      const s = await getDoc(doc(db, 'config', 'payment'));
+      payCfg = s.exists() ? s.data() : { methods: [], plans: [] };
+    } catch (e) { payCfg = { error: true }; }
+    renderPay();
+  }
+
+  function watchPayReq() {
+    const id = localStorage.getItem(PAY_KEY);
+    if (!id || payUnsub) return;
+    payUnsub = onSnapshot(doc(db, 'payments', id), s => {
+      payReq = s.exists() ? { id, ...s.data() } : null;
+      renderPay();
+    }, () => {});
+  }
+
+  function renderPay() {
+    const root = document.getElementById('pay-root');
+    if (!root) return;
+    const box = h => { root.innerHTML = '<div class="bg-white text-slate-800 rounded-2xl p-4 text-left text-sm shadow-xl" style="margin-top:20px">' + h + '</div>'; };
+
+    if (!payCfg) return box('<p class="text-center text-slate-500">পেমেন্টের তথ্য লোড হচ্ছে...</p>');
+    if (payCfg.error) return box('<p class="text-center text-rose-600 font-semibold">তথ্য আনা যায়নি। ইন্টারনেট চেক করে পেজ রিলোড দিন।</p>');
+    const plans = payCfg.plans || [], methods = payCfg.methods || [];
+    if (!plans.length || !methods.length) return box('<p class="text-center text-slate-600">অনলাইন পেমেন্ট এখনো চালু হয়নি। অ্যাডমিনের সাথে সরাসরি যোগাযোগ করুন।</p>');
+
+    if (payReq && payReq.status === 'pending') {
+      return box('<div class="text-center space-y-2"><div class="text-3xl">⏳</div><p class="font-bold">পেমেন্ট যাচাই চলছে</p>' +
+        '<p class="text-xs text-slate-600">TrxID <b>' + esc(payReq.trxId) + '</b> — ৳' + esc(payReq.amount) + ' (' + esc(payReq.planName) + ')<br>' +
+        'অ্যাডমিন কনফার্ম করলে POS নিজে থেকেই চালু হবে। এই পেজ খোলা রাখুন।</p></div>');
+    }
+    if (payReq && payReq.status === 'approved') {
+      return box('<div class="text-center space-y-2"><div class="text-3xl">✅</div><p class="font-bold text-green-700">পেমেন্ট কনফার্ম হয়েছে</p>' +
+        '<p class="text-xs text-slate-600">আপনার সাবস্ক্রিপশন নবায়ন হয়েছে। ধন্যবাদ!</p>' +
+        '<button type="button" id="pay-new" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-semibold">আরেকটি পেমেন্ট করুন</button></div>');
+    }
+
+    const rejected = (payReq && payReq.status === 'rejected')
+      ? '<div class="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700"><b>আগের পেমেন্ট গ্রহণ করা হয়নি।</b> ' + esc(payReq.adminNote || '') + '<br>সঠিক তথ্য দিয়ে আবার জমা দিন।</div>' : '';
+
+    if (chosen.plan >= plans.length) chosen.plan = 0;
+    if (chosen.method >= methods.length) chosen.method = 0;
+
+    box(
+      rejected +
+      '<h3 class="font-bold text-base mb-2">💳 সাবস্ক্রিপশন নবায়ন</h3>' +
+      '<p class="text-xs font-semibold text-slate-500 mb-1">১) প্যাকেজ বেছে নিন</p>' +
+      '<div class="space-y-1.5 mb-3">' + plans.map((p, i) =>
+        '<label class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-300 cursor-pointer has-[:checked]:border-green-600 has-[:checked]:bg-green-50">' +
+        '<span class="flex items-center gap-2"><input type="radio" name="pay-plan" value="' + i + '"' + (i === chosen.plan ? ' checked' : '') + '>' +
+        '<b>' + esc(p.name) + '</b> <span class="text-xs text-slate-500">(' + esc(p.days) + ' দিন)</span></span>' +
+        '<b class="font-mono">৳' + esc(p.price) + '</b></label>').join('') + '</div>' +
+
+      '<p class="text-xs font-semibold text-slate-500 mb-1">২) নিচের যেকোনো একটিতে টাকা পাঠান (যেটাতে পাঠালেন সেটা টিক দিন)</p>' +
+      '<div class="space-y-1.5 mb-3">' + methods.map((m, i) =>
+        '<label class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-300 cursor-pointer has-[:checked]:border-green-600 has-[:checked]:bg-green-50">' +
+        '<span class="flex items-center gap-2"><input type="radio" name="pay-method" value="' + i + '"' + (i === chosen.method ? ' checked' : '') + '>' +
+        '<span><b>' + esc(m.type) + '</b> <span class="text-xs text-slate-500">' + esc(m.label || '') + '</span><br>' +
+        '<span class="font-mono font-bold">' + esc(m.number) + '</span></span></span>' +
+        '<button type="button" data-copy="' + esc(m.number) + '" class="px-2 py-1 bg-slate-800 text-white rounded-lg text-[11px] font-semibold">কপি</button></label>').join('') + '</div>' +
+
+      '<p class="text-xs font-semibold text-slate-500 mb-1">৩) পাঠানোর তথ্য দিন</p>' +
+      '<input id="pay-sender" placeholder="যে নম্বর / অ্যাকাউন্ট থেকে পাঠিয়েছেন" class="w-full px-3 py-2 border border-slate-300 rounded-xl mb-2">' +
+      '<input id="pay-trx" placeholder="TrxID / রেফারেন্স নম্বর" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono mb-2">' +
+      (payCfg.note ? '<p class="text-[11px] text-slate-500 mb-2">' + esc(payCfg.note) + '</p>' : '') +
+      '<p id="pay-err" class="text-xs text-rose-600 font-semibold mb-2"></p>' +
+      '<button type="button" id="pay-submit" class="w-full py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl">টাকা পাঠিয়েছি — জমা দিন</button>'
+    );
+  }
+
+  async function submitPay() {
+    const err = document.getElementById('pay-err'), btn = document.getElementById('pay-submit');
+    const plan = (payCfg.plans || [])[chosen.plan], m = (payCfg.methods || [])[chosen.method];
+    const sender = document.getElementById('pay-sender').value.trim();
+    const trx = document.getElementById('pay-trx').value.trim();
+    if (!plan || !m) { err.textContent = 'প্যাকেজ ও পেমেন্ট মাধ্যম বেছে নিন'; return; }
+    if (sender.length < 5) { err.textContent = 'যে নম্বর/অ্যাকাউন্ট থেকে পাঠিয়েছেন সেটা লিখুন'; return; }
+    if (trx.length < 5) { err.textContent = 'TrxID / রেফারেন্স নম্বর লিখুন'; return; }
+    err.textContent = '';
+    btn.disabled = true; btn.textContent = 'জমা হচ্ছে...';
+    try {
+      const ref = doc(collection(db, 'payments'));
+      await setDoc(ref, {
+        shopId: SHOP, shopName: (shopInfo && shopInfo.name) || '',
+        planName: String(plan.name), planDays: Number(plan.days), amount: Number(plan.price),
+        method: String(m.type), toNumber: String(m.number),
+        sender, trxId: trx, status: 'pending', createdAt: serverTimestamp()
+      });
+      localStorage.setItem(PAY_KEY, ref.id);
+      if (payUnsub) payUnsub(); payUnsub = null;
+      watchPayReq();
+    } catch (e) {
+      console.error(e);
+      btn.disabled = false; btn.textContent = 'টাকা পাঠিয়েছি — জমা দিন';
+      err.textContent = 'জমা দেওয়া যায়নি: ' + (e.code || e.message);
+    }
+  }
+
+  lockEl.addEventListener('change', e => {
+    if (e.target.name === 'pay-plan') chosen.plan = +e.target.value;
+    if (e.target.name === 'pay-method') chosen.method = +e.target.value;
+  });
+  lockEl.addEventListener('click', async e => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.copy) {
+      try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = '✓ কপি হয়েছে'; } catch (x) {}
+    } else if (t.id === 'pay-submit') submitPay();
+    else if (t.id === 'pay-new') {
+      localStorage.removeItem(PAY_KEY);
+      if (payUnsub) payUnsub(); payUnsub = null; payReq = null;
+      renderPay();
+    } else if (t.id === 'renew-close') { lockEl.style.display = 'none'; lockEl.dataset.key = ''; }
+  });
+
+  // মেয়াদ থাকতেই আগে নবায়ন (হলুদ ব্যাজে চাপ দিলে)
+  function openRenew() {
+    lockEl.dataset.key = 'renew';
+    lockEl.innerHTML = '<div style="max-width:440px;width:100%;margin:auto"><button id="renew-close" type="button" style="float:right;color:#cbd5e1;font-size:14px;font-weight:700">✕ বন্ধ করুন</button><div style="clear:both"></div><div id="pay-root"></div></div>';
+    lockEl.style.display = 'flex';
+    if (!payCfg) loadPayCfg(); else renderPay();
+    watchPayReq();
+  }
+  chip.style.cursor = 'pointer';
+  chip.onclick = openRenew;
+
+  function showLock(icon, title, msg, pay) {
+    const key = icon + title + msg + (pay ? 'P' : '');
+    if (lockEl.style.display === 'flex' && lockEl.dataset.key === key) { window.__posLocked = true; return; }  // ফর্ম মুছে যাওয়া আটকাতে
+    lockEl.dataset.key = key;
     lockEl.innerHTML =
-      '<div style="max-width:420px"><div style="font-size:56px;margin-bottom:12px">' + icon + '</div>' +
+      '<div style="max-width:440px;width:100%;margin:auto"><div style="font-size:56px;margin-bottom:12px">' + icon + '</div>' +
       '<h2 style="font-size:22px;font-weight:700;margin:0 0 8px">' + title + '</h2>' +
-      '<p style="font-size:14px;color:#cbd5e1;line-height:1.7;margin:0">' + msg + '</p></div>';
+      '<p style="font-size:14px;color:#cbd5e1;line-height:1.7;margin:0">' + msg + '</p>' +
+      (pay ? '<div id="pay-root"></div>' : '') + '</div>';
     lockEl.style.display = 'flex';
     chip.style.display = 'none';
     window.__posLocked = true;
     if (started) needReload = true;
+    if (pay) {
+      if (!payCfg) loadPayCfg(); else renderPay();
+      watchPayReq();
+    }
   }
 
   function evaluate() {
@@ -3711,17 +3851,17 @@
     const exp = shopInfo.expiresAt && shopInfo.expiresAt.toMillis ? shopInfo.expiresAt.toMillis() : 0;
     if (!exp || Date.now() > exp) {
       return showLock('⏰', 'সাবস্ক্রিপশনের মেয়াদ শেষ',
-        (exp ? fmtDate(exp) + ' তারিখে ' : '') + 'আপনার সাবস্ক্রিপশনের মেয়াদ শেষ হয়েছে। POS আবার চালু করতে নবায়ন করুন।' + contact);
+        (exp ? fmtDate(exp) + ' তারিখে ' : '') + 'আপনার সাবস্ক্রিপশনের মেয়াদ শেষ হয়েছে। POS আবার চালু করতে নিচের ফর্মে পেমেন্ট করুন।' + contact, true);
     }
 
     // বৈধ
     if (needReload) { location.reload(); return; }   // নবায়নের পর লাইভ কানেকশন নতুন করে চালু
-    lockEl.style.display = 'none';
+    if (lockEl.dataset.key !== 'renew') { lockEl.style.display = 'none'; lockEl.dataset.key = ''; }
     window.__posLocked = false;
 
     const left = Math.ceil((exp - Date.now()) / 86400000);
     if (left <= 7) {
-      chip.textContent = '⚠️ সাবস্ক্রিপশনের মেয়াদ আর ' + left.toLocaleString('bn-BD') + ' দিন';
+      chip.textContent = '⚠️ সাবস্ক্রিপশনের মেয়াদ আর ' + left.toLocaleString('bn-BD') + ' দিন — নবায়ন করুন';
       chip.style.display = 'block';
     } else chip.style.display = 'none';
 

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="bn" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS অ্যাডমিন প্যানেল</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Hind Siliguri', 'Inter', system-ui, sans-serif; }</style>
+</head>
+<body class="min-h-full text-slate-800 antialiased">
+
+  <!-- ================= LOGIN ================= -->
+  <div id="login-view" class="min-h-screen flex items-center justify-center p-4">
+    <form id="login-form" class="bg-white w-full max-w-sm p-6 rounded-2xl shadow-lg border border-slate-200 space-y-4">
+      <div class="text-center">
+        <div class="text-4xl mb-1">🛠️</div>
+        <h1 class="text-xl font-bold">POS অ্যাডমিন লগইন</h1>
+        <p class="text-xs text-slate-500">শুধু মালিকের জন্য</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1">ইমেইল</label>
+        <input id="login-email" type="email" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1">পাসওয়ার্ড</label>
+        <input id="login-pass" type="password" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+      </div>
+      <p id="login-err" class="text-xs text-rose-600 font-semibold hidden"></p>
+      <button class="w-full py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-sm">লগইন</button>
+    </form>
+  </div>
+
+  <!-- ================= APP ================= -->
+  <div id="app-view" class="hidden max-w-7xl mx-auto p-3 sm:p-6 space-y-5">
+
+    <header class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold">🛠️ POS অ্যাডমিন প্যানেল</h1>
+        <p class="text-xs text-slate-500">নতুন POS তৈরি, সাবস্ক্রিপশন নবায়ন ও বন্ধ/চালু করুন</p>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span id="admin-email" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-semibold"></span>
+        <button id="logout-btn" class="px-3 py-1.5 bg-slate-800 text-white rounded-xl font-semibold">লগআউট</button>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">মোট POS</p><p id="st-total" class="text-2xl font-bold">০</p></div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">সক্রিয়</p><p id="st-active" class="text-2xl font-bold text-emerald-600">০</p></div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">৭ দিনে মেয়াদ শেষ</p><p id="st-soon" class="text-2xl font-bold text-amber-600">০</p></div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">মেয়াদ শেষ / বন্ধ</p><p id="st-off" class="text-2xl font-bold text-rose-600">০</p></div>
+    </section>
+
+    <!-- Settings + Create -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
+        <h2 class="font-bold text-sm">➕ নতুন POS তৈরি করুন</h2>
+        <form id="create-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">দোকানের নাম *</label>
+            <input id="c-name" required placeholder="উদাঃ রহমান ফ্যাশন" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">মালিকের নাম</label>
+            <input id="c-owner" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">মোবাইল নম্বর</label>
+            <input id="c-phone" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">মেয়াদ (দিন)</label>
+            <div class="flex gap-1">
+              <input id="c-days" type="number" min="1" value="30" class="w-20 px-3 py-2 border border-slate-300 rounded-xl font-mono font-bold">
+              <button type="button" data-days="30" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">৩০</button>
+              <button type="button" data-days="90" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">৯০</button>
+              <button type="button" data-days="180" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">১৮০</button>
+              <button type="button" data-days="365" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">১ বছর</button>
+            </div>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block font-semibold mb-1">নোট (শুধু আপনি দেখবেন)</label>
+            <input id="c-note" placeholder="যেমন: মাসিক ৫০০ টাকা, বিকাশে নিয়েছি" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+          </div>
+          <div class="sm:col-span-2">
+            <button class="px-5 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl">POS তৈরি করুন</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
+        <h2 class="font-bold text-sm">⚙️ অ্যাডমিন সেটিংস</h2>
+        <div>
+          <label class="block font-semibold mb-1">POS ফাইলের ঠিকানা (URL)</label>
+          <input id="s-posurl" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-[11px]">
+          <p class="text-[10px] text-slate-400 mt-1">এই ঠিকানার সাথে ?shop=ID জুড়ে লিংক তৈরি হবে</p>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">আপনার যোগাযোগ নম্বর</label>
+          <input id="s-contact" placeholder="01XXXXXXXXX" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+          <p class="text-[10px] text-slate-400 mt-1">মেয়াদ শেষের লক স্ক্রিনে দোকানদার এটা দেখবে (নতুন POS-এ বসবে)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shops table -->
+    <section class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-bold text-sm">📋 সব POS-এর তালিকা</h2>
+        <input id="q" placeholder="নাম / মোবাইল / ID খুঁজুন..." class="px-3 py-2 border border-slate-300 rounded-xl text-xs w-full sm:w-64">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs sm:text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4">দোকান</th>
+              <th class="py-3 px-3">অবস্থা</th>
+              <th class="py-3 px-3">মেয়াদ</th>
+              <th class="py-3 px-4">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody id="shops-tbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 shadow-lg"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, getDocs, writeBatch, Timestamp }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB377aY9sBt__ghtnYow6r2PweIwl7q-XE",
+    authDomain: "cloth-store-pos.firebaseapp.com",
+    projectId: "cloth-store-pos",
+    storageBucket: "cloth-store-pos.firebasestorage.app",
+    messagingSenderId: "421224640457",
+    appId: "1:421224640457:web:f001d840a5abd5d14fc218",
+    measurementId: "G-H45MD17V5S"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const $ = id => document.getElementById(id);
+  const DAY = 86400000;
+  const SUBS = ['products', 'sales', 'settings'];
+  const LEGACY_DEMO = ['MEMO-842101', 'MEMO-842102'];
+  const bn = n => Number(n).toLocaleString('bn-BD');
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function toast(m) {
+    const t = $('toast');
+    t.textContent = m; t.classList.remove('hidden');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.add('hidden'), 3000);
+  }
+
+  /* ---------- সেটিংস (এই ব্রাউজারে সেভ থাকে) ---------- */
+  $('s-posurl').value = localStorage.getItem('adm_posurl') || (location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'pos.html');
+  $('s-contact').value = localStorage.getItem('adm_contact') || '';
+  $('s-posurl').addEventListener('input', e => localStorage.setItem('adm_posurl', e.target.value.trim()));
+  $('s-contact').addEventListener('input', e => localStorage.setItem('adm_contact', e.target.value.trim()));
+
+  const linkFor = id => {
+    const base = $('s-posurl').value.trim();
+    return base + (base.includes('?') ? '&' : '?') + 'shop=' + id;
+  };
+
+  /* ---------- লগইন ---------- */
+  $('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('login-err').classList.add('hidden');
+    try {
+      await signInWithEmailAndPassword(auth, $('login-email').value.trim(), $('login-pass').value);
+    } catch (err) {
+      $('login-err').textContent = 'লগইন ব্যর্থ: ইমেইল বা পাসওয়ার্ড ভুল';
+      $('login-err').classList.remove('hidden');
+    }
+  });
+  $('logout-btn').onclick = () => signOut(auth);
+
+  let unsub = null;
+  const shops = new Map();
+
+  onAuthStateChanged(auth, user => {
+    if (unsub) { unsub(); unsub = null; }
+    if (!user) {
+      $('app-view').classList.add('hidden');
+      $('login-view').classList.remove('hidden');
+      return;
+    }
+    $('login-view').classList.add('hidden');
+    $('app-view').classList.remove('hidden');
+    $('admin-email').textContent = user.email;
+    unsub = onSnapshot(collection(db, 'shops'), snap => {
+      shops.clear();
+      snap.docs.forEach(d => shops.set(d.id, d.data()));
+      render();
+    }, err => {
+      console.error(err);
+      toast('ডাটা পড়া যায়নি — আপনার ইমেইল Firestore Rules-এ অ্যাডমিন হিসেবে দেওয়া আছে কিনা দেখুন');
+    });
+  });
+
+  /* ---------- অবস্থা হিসাব ---------- */
+  const expMs = s => (s.expiresAt && s.expiresAt.toMillis) ? s.expiresAt.toMillis() : 0;
+  function statusOf(s) {
+    const exp = expMs(s), left = Math.ceil((exp - Date.now()) / DAY);
+    if (s.active === false) return { k: 'off', label: 'বন্ধ করা', cls: 'bg-slate-200 text-slate-700', left };
+    if (!exp || exp < Date.now()) return { k: 'exp', label: 'মেয়াদ শেষ', cls: 'bg-rose-100 text-rose-700', left };
+    if (left <= 7) return { k: 'soon', label: 'শীঘ্রই শেষ', cls: 'bg-amber-100 text-amber-800', left };
+    return { k: 'ok', label: 'সক্রিয়', cls: 'bg-emerald-100 text-emerald-800', left };
+  }
+  const endOfDay = ms => { const d = new Date(ms); d.setHours(23, 59, 59, 0); return d; };
+
+  /* ---------- রেন্ডার ---------- */
+  function render() {
+    const list = [...shops.entries()].map(([id, s]) => ({ id, ...s, st: statusOf(s) }))
+      .sort((a, b) => (b.createdAt ? b.createdAt.toMillis() : 0) - (a.createdAt ? a.createdAt.toMillis() : 0));
+
+    $('st-total').textContent = bn(list.length);
+    $('st-active').textContent = bn(list.filter(x => x.st.k === 'ok' || x.st.k === 'soon').length);
+    $('st-soon').textContent = bn(list.filter(x => x.st.k === 'soon').length);
+    $('st-off').textContent = bn(list.filter(x => x.st.k === 'exp' || x.st.k === 'off').length);
+
+    const q = $('q').value.trim().toLowerCase();
+    const shown = list.filter(x => !q || [x.name, x.owner, x.phone, x.id].some(v => String(v || '').toLowerCase().includes(q)));
+
+    if (!shown.length) {
+      $('shops-tbody').innerHTML = '<tr><td colspan="4" class="py-12 text-center text-slate-400">কোনো POS নেই</td></tr>';
+      return;
+    }
+
+    $('shops-tbody').innerHTML = shown.map(x => {
+      const exp = expMs(x);
+      const leftTxt = x.st.k === 'exp' ? (exp ? bn(Math.abs(x.st.left)) + ' দিন আগে শেষ' : 'মেয়াদ নেই') : bn(x.st.left) + ' দিন বাকি';
+      return `
+      <tr class="hover:bg-slate-50 align-top">
+        <td class="py-3 px-4">
+          <div class="font-bold text-slate-900">${esc(x.name)}</div>
+          <div class="text-[11px] text-slate-500">${esc(x.owner || '')} ${x.phone ? '• ' + esc(x.phone) : ''}</div>
+          <div class="text-[10px] font-mono text-slate-400">ID: ${esc(x.id)}</div>
+          ${x.note ? `<div class="text-[11px] text-slate-500 mt-0.5">📝 ${esc(x.note)}</div>` : ''}
+        </td>
+        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${x.st.cls}">${x.st.label}</span></td>
+        <td class="py-3 px-3 text-xs">
+          <div class="font-semibold">${exp ? new Date(exp).toLocaleDateString('bn-BD', { dateStyle: 'medium' }) : '-'}</div>
+          <div class="text-[11px] text-slate-500">${leftTxt}</div>
+        </td>
+        <td class="py-3 px-4">
+          <div class="flex flex-wrap gap-1.5 text-[11px] font-semibold" data-id="${esc(x.id)}">
+            <button data-act="copy" class="px-2 py-1 bg-slate-800 text-white rounded-lg">🔗 লিংক কপি</button>
+            <button data-act="open" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg">খুলুন</button>
+            <button data-act="add30" class="px-2 py-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-lg">+৩০ দিন</button>
+            <button data-act="add365" class="px-2 py-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-lg">+১ বছর</button>
+            <button data-act="date" class="px-2 py-1 bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg">তারিখ দিন</button>
+            <button data-act="toggle" class="px-2 py-1 ${x.active === false ? 'bg-green-600 text-white' : 'bg-amber-100 text-amber-800'} rounded-lg">${x.active === false ? 'চালু করুন' : 'বন্ধ করুন'}</button>
+            <button data-act="stats" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg">📊 পরিসংখ্যান</button>
+            <button data-act="import" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg">⬇️ পুরনো ডাটা আনুন</button>
+            <button data-act="edit" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg">✏️ এডিট</button>
+            <button data-act="del" class="px-2 py-1 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg">ডিলিট</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  $('q').addEventListener('input', render);
+
+  /* ---------- নতুন POS ---------- */
+  document.querySelectorAll('.dayq').forEach(b => b.onclick = () => { $('c-days').value = b.dataset.days; });
+
+  const newId = () => 'sh' + Array.from(crypto.getRandomValues(new Uint8Array(8))).map(n => 'abcdefghjkmnpqrstuvwxyz23456789'[n % 31]).join('');
+
+  $('create-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const days = parseInt($('c-days').value) || 30;
+    const id = newId();
+    try {
+      await setDoc(doc(db, 'shops', id), {
+        name: $('c-name').value.trim(),
+        owner: $('c-owner').value.trim(),
+        phone: $('c-phone').value.trim(),
+        note: $('c-note').value.trim(),
+        contact: $('s-contact').value.trim(),
+        active: true,
+        expiresAt: Timestamp.fromDate(endOfDay(Date.now() + days * DAY)),
+        createdAt: Timestamp.now()
+      });
+      e.target.reset();
+      $('c-days').value = 30;
+      const link = linkFor(id);
+      try { await navigator.clipboard.writeText(link); } catch (x) {}
+      toast('✅ POS তৈরি হয়েছে — লিংক কপি হয়েছে');
+    } catch (err) {
+      console.error(err);
+      toast('তৈরি করা যায়নি: ' + (err.code || err.message));
+    }
+  });
+
+  /* ---------- সারির অ্যাকশন ---------- */
+  async function extend(id, days) {
+    const s = shops.get(id);
+    const base = Math.max(Date.now(), expMs(s));
+    await updateDoc(doc(db, 'shops', id), { expiresAt: Timestamp.fromDate(endOfDay(base + days * DAY)) });
+    toast('✅ মেয়াদ বাড়ানো হয়েছে');
+  }
+
+  async function wipeShop(id) {
+    for (const name of SUBS) {
+      const snap = await getDocs(collection(db, 'shops', id, name));
+      for (let i = 0; i < snap.docs.length; i += 400) {
+        const b = writeBatch(db);
+        snap.docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
+        await b.commit();
+      }
+    }
+    await deleteDoc(doc(db, 'shops', id));
+  }
+
+  async function importLegacy(id) {
+    if (!confirm('আগের (পুরনো, root) ডাটা — পণ্য, বিক্রয় ও সেটিংস — এই দোকানে কপি হবে। চালিয়ে যাবেন?')) return;
+    toast('কপি হচ্ছে...');
+    let n = 0;
+    for (const name of SUBS) {
+      const snap = await getDocs(collection(db, name));
+      const docs = snap.docs.filter(d => !(name === 'sales' && LEGACY_DEMO.includes(d.id)));
+      for (let i = 0; i < docs.length; i += 400) {
+        const b = writeBatch(db);
+        docs.slice(i, i + 400).forEach(d => b.set(doc(db, 'shops', id, name, d.id), d.data()));
+        await b.commit();
+      }
+      n += docs.length;
+    }
+    toast('✅ ' + bn(n) + ' টি রেকর্ড কপি হয়েছে');
+  }
+
+  async function showStats(id) {
+    const [p, s] = await Promise.all([getDocs(collection(db, 'shops', id, 'products')), getDocs(collection(db, 'shops', id, 'sales'))]);
+    let total = 0, today = 0;
+    const t0 = new Date().toISOString().slice(0, 10);
+    s.docs.forEach(d => { const v = d.data(); total += v.grandTotal || 0; if ((v.date || '').startsWith(t0)) today += v.grandTotal || 0; });
+    alert(`${shops.get(id).name}\n\nপণ্য: ${bn(p.size)} টি\nমোট মেমো: ${bn(s.size)} টি\nআজকের বিক্রি: ৳ ${bn(today)}\nসর্বমোট বিক্রি: ৳ ${bn(total)}`);
+  }
+
+  document.getElementById('shops-tbody').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = btn.parentElement.dataset.id;
+    const s = shops.get(id);
+    if (!s) return;
+    try {
+      switch (btn.dataset.act) {
+        case 'copy':
+          try { await navigator.clipboard.writeText(linkFor(id)); toast('🔗 লিংক কপি হয়েছে'); }
+          catch (x) { prompt('লিংক কপি করুন:', linkFor(id)); }
+          break;
+        case 'open': window.open(linkFor(id), '_blank'); break;
+        case 'add30': await extend(id, 30); break;
+        case 'add365': await extend(id, 365); break;
+        case 'date': {
+          const v = prompt('নতুন মেয়াদের শেষ তারিখ (YYYY-MM-DD):', new Date(Math.max(Date.now(), expMs(s))).toISOString().slice(0, 10));
+          if (!v) break;
+          const d = new Date(v + 'T23:59:59');
+          if (isNaN(d)) { toast('তারিখ সঠিক নয়'); break; }
+          await updateDoc(doc(db, 'shops', id), { expiresAt: Timestamp.fromDate(d) });
+          toast('✅ মেয়াদ আপডেট হয়েছে');
+          break;
+        }
+        case 'toggle':
+          await updateDoc(doc(db, 'shops', id), { active: s.active === false });
+          toast(s.active === false ? '✅ POS চালু হয়েছে' : '⛔ POS বন্ধ করা হয়েছে');
+          break;
+        case 'stats': await showStats(id); break;
+        case 'import': await importLegacy(id); break;
+        case 'edit': {
+          const name = prompt('দোকানের নাম:', s.name); if (name === null) break;
+          const owner = prompt('মালিকের নাম:', s.owner || ''); if (owner === null) break;
+          const phone = prompt('মোবাইল:', s.phone || ''); if (phone === null) break;
+          const note = prompt('নোট:', s.note || ''); if (note === null) break;
+          await updateDoc(doc(db, 'shops', id), { name: name.trim() || s.name, owner: owner.trim(), phone: phone.trim(), note: note.trim(), contact: $('s-contact').value.trim() || s.contact || '' });
+          toast('✅ আপডেট হয়েছে');
+          break;
+        }
+        case 'del':
+          if (confirm(`"${s.name}" এবং এর সব পণ্য, বিক্রয় ও সেটিংস স্থায়ীভাবে মুছে যাবে। নিশ্চিত?`)) {
+            await wipeShop(id);
+            toast('🗑️ ডিলিট হয়েছে');
+          }
+          break;
+      }
+    } catch (err) {
+      console.error(err);
+      toast('ব্যর্থ: ' + (err.code || err.message));
+    }
+  });
+</script>
+</body>
+</html>

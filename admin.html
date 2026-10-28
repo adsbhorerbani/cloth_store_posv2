@@ -37,7 +37,7 @@
     <header class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold">🛠️ POS অ্যাডমিন প্যানেল</h1>
-        <p class="text-xs text-slate-500">নতুন POS তৈরি, সাবস্ক্রিপশন নবায়ন ও বন্ধ/চালু করুন</p>
+        <p class="text-xs text-slate-500">নতুন POS তৈরি, পেমেন্ট কনফার্ম, নবায়ন ও বন্ধ/চালু করুন</p>
       </div>
       <div class="flex items-center gap-2 text-xs">
         <span id="admin-email" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-semibold"></span>
@@ -45,15 +45,47 @@
       </div>
     </header>
 
+    <!-- নতুন পেমেন্ট ব্যানার -->
+    <div id="pending-banner" class="hidden p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-sm font-semibold flex items-center justify-between gap-2">
+      <span id="pending-banner-text"></span>
+      <a href="#pay-section" class="px-3 py-1.5 bg-amber-500 text-white rounded-xl text-xs font-bold">দেখুন</a>
+    </div>
+
     <!-- Stats -->
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <section class="grid grid-cols-2 lg:grid-cols-5 gap-3">
       <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">মোট POS</p><p id="st-total" class="text-2xl font-bold">০</p></div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">সক্রিয়</p><p id="st-active" class="text-2xl font-bold text-emerald-600">০</p></div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">৭ দিনে মেয়াদ শেষ</p><p id="st-soon" class="text-2xl font-bold text-amber-600">০</p></div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-xs text-slate-400 font-semibold">মেয়াদ শেষ / বন্ধ</p><p id="st-off" class="text-2xl font-bold text-rose-600">০</p></div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 col-span-2 lg:col-span-1"><p class="text-xs text-slate-400 font-semibold">এ মাসের আয় (কনফার্মড)</p><p id="st-income" class="text-2xl font-bold text-green-700">৳ ০</p></div>
     </section>
 
-    <!-- Settings + Create -->
+    <!-- পেমেন্ট রিকোয়েস্ট -->
+    <section id="pay-section" class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-bold text-sm">📥 পেমেন্ট রিকোয়েস্ট <span id="pay-pending-count" class="ml-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs"></span></h2>
+        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl text-xs">
+          <button id="pf-pending" class="pf px-3 py-1.5 rounded-lg font-bold bg-white text-green-700">অপেক্ষমাণ</button>
+          <button id="pf-all" class="pf px-3 py-1.5 rounded-lg font-semibold text-slate-600">সব হিস্ট্রি</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs sm:text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4">দোকান ও প্যাকেজ</th>
+              <th class="py-3 px-3">পেমেন্টের তথ্য</th>
+              <th class="py-3 px-3">সময়</th>
+              <th class="py-3 px-4">অবস্থা / অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody id="pay-tbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+      <p class="px-4 py-2 text-[11px] text-slate-400 border-t border-slate-100">⚠️ কনফার্ম করার আগে নিজের বিকাশ/নগদ/ব্যাংক অ্যাপে টাকা ও TrxID মিলিয়ে নিন। মিথ্যা TrxID দিয়েও রিকোয়েস্ট আসতে পারে।</p>
+    </section>
+
+    <!-- Create + Settings -->
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
         <h2 class="font-bold text-sm">➕ নতুন POS তৈরি করুন</h2>
@@ -71,18 +103,18 @@
             <input id="c-phone" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
           </div>
           <div>
-            <label class="block font-semibold mb-1">মেয়াদ (দিন)</label>
+            <label class="block font-semibold mb-1">শুরুর মেয়াদ (দিন)</label>
             <div class="flex gap-1">
               <input id="c-days" type="number" min="1" value="30" class="w-20 px-3 py-2 border border-slate-300 rounded-xl font-mono font-bold">
+              <button type="button" data-days="7" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">৭</button>
               <button type="button" data-days="30" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">৩০</button>
               <button type="button" data-days="90" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">৯০</button>
-              <button type="button" data-days="180" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">১৮০</button>
               <button type="button" data-days="365" class="dayq px-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">১ বছর</button>
             </div>
           </div>
           <div class="sm:col-span-2">
             <label class="block font-semibold mb-1">নোট (শুধু আপনি দেখবেন)</label>
-            <input id="c-note" placeholder="যেমন: মাসিক ৫০০ টাকা, বিকাশে নিয়েছি" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+            <input id="c-note" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
           </div>
           <div class="sm:col-span-2">
             <button class="px-5 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl">POS তৈরি করুন</button>
@@ -100,9 +132,36 @@
         <div>
           <label class="block font-semibold mb-1">আপনার যোগাযোগ নম্বর</label>
           <input id="s-contact" placeholder="01XXXXXXXXX" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
-          <p class="text-[10px] text-slate-400 mt-1">মেয়াদ শেষের লক স্ক্রিনে দোকানদার এটা দেখবে (নতুন POS-এ বসবে)</p>
+          <p class="text-[10px] text-slate-400 mt-1">লক স্ক্রিনে দোকানদার এটা দেখবে (নতুন POS-এ বসবে)</p>
         </div>
       </div>
+    </section>
+
+    <!-- পেমেন্ট সেটিংস -->
+    <section class="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 text-xs">
+      <div>
+        <h2 class="font-bold text-sm">💳 পেমেন্ট সেটিংস</h2>
+        <p class="text-[11px] text-slate-500">এখানে যা দেবেন, মেয়াদ শেষ হলে দোকানদারের স্ক্রিনে ঠিক তাই দেখাবে।</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="space-y-2">
+          <h3 class="font-bold">টাকা নেওয়ার অ্যাকাউন্ট (বিকাশ / নগদ / রকেট / ব্যাংক)</h3>
+          <div id="pm-list" class="space-y-1.5"></div>
+          <button type="button" id="pm-add" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">➕ অ্যাকাউন্ট যোগ</button>
+        </div>
+        <div class="space-y-2">
+          <h3 class="font-bold">প্যাকেজ ও মূল্য</h3>
+          <div id="pl-list" class="space-y-1.5"></div>
+          <button type="button" id="pl-add" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold">➕ প্যাকেজ যোগ</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">দোকানদারের জন্য নির্দেশনা (ঐচ্ছিক)</label>
+        <input id="pay-note" placeholder="যেমন: Send Money করুন, রেফারেন্সে দোকানের নাম লিখবেন" class="w-full px-3 py-2 border border-slate-300 rounded-xl">
+      </div>
+      <button type="button" id="pay-save" class="px-5 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl">পেমেন্ট সেটিংস সেভ করুন</button>
     </section>
 
     <!-- Shops table -->
@@ -153,14 +212,16 @@
   const DAY = 86400000;
   const SUBS = ['products', 'sales', 'settings'];
   const LEGACY_DEMO = ['MEMO-842101', 'MEMO-842102'];
+  const TYPES = ['bKash', 'Nagad', 'Rocket', 'Upay', 'ব্যাংক', 'অন্যান্য'];
   const bn = n => Number(n).toLocaleString('bn-BD');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const tsMs = t => (t && t.toMillis) ? t.toMillis() : 0;
 
   function toast(m) {
     const t = $('toast');
     t.textContent = m; t.classList.remove('hidden');
     clearTimeout(toast._t);
-    toast._t = setTimeout(() => t.classList.add('hidden'), 3000);
+    toast._t = setTimeout(() => t.classList.add('hidden'), 3200);
   }
 
   /* ---------- সেটিংস (এই ব্রাউজারে সেভ থাকে) ---------- */
@@ -187,11 +248,16 @@
   });
   $('logout-btn').onclick = () => signOut(auth);
 
-  let unsub = null;
+  let unsubs = [];
   const shops = new Map();
+  const payments = new Map();
+  let payCfg = { methods: [], plans: [] };
+  let cfgFormLoaded = false;
+  let payFilter = 'pending';
 
   onAuthStateChanged(auth, user => {
-    if (unsub) { unsub(); unsub = null; }
+    unsubs.forEach(u => u()); unsubs = [];
+    cfgFormLoaded = false;
     if (!user) {
       $('app-view').classList.add('hidden');
       $('login-view').classList.remove('hidden');
@@ -200,18 +266,33 @@
     $('login-view').classList.add('hidden');
     $('app-view').classList.remove('hidden');
     $('admin-email').textContent = user.email;
-    unsub = onSnapshot(collection(db, 'shops'), snap => {
-      shops.clear();
-      snap.docs.forEach(d => shops.set(d.id, d.data()));
-      render();
-    }, err => {
+
+    const onErr = err => {
       console.error(err);
       toast('ডাটা পড়া যায়নি — আপনার ইমেইল Firestore Rules-এ অ্যাডমিন হিসেবে দেওয়া আছে কিনা দেখুন');
-    });
+    };
+
+    unsubs.push(onSnapshot(collection(db, 'shops'), snap => {
+      shops.clear();
+      snap.docs.forEach(d => shops.set(d.id, d.data()));
+      render(); renderPayments();
+    }, onErr));
+
+    unsubs.push(onSnapshot(collection(db, 'payments'), snap => {
+      payments.clear();
+      snap.docs.forEach(d => payments.set(d.id, d.data()));
+      renderPayments(); renderStats();
+    }, onErr));
+
+    unsubs.push(onSnapshot(doc(db, 'config', 'payment'), s => {
+      payCfg = s.exists() ? s.data() : { methods: [], plans: [] };
+      if (!cfgFormLoaded) { cfgFormLoaded = true; fillCfgForm(); }   // টাইপ করার সময় ফর্ম মুছে যাবে না
+      renderPayments();
+    }, onErr));
   });
 
   /* ---------- অবস্থা হিসাব ---------- */
-  const expMs = s => (s.expiresAt && s.expiresAt.toMillis) ? s.expiresAt.toMillis() : 0;
+  const expMs = s => tsMs(s.expiresAt);
   function statusOf(s) {
     const exp = expMs(s), left = Math.ceil((exp - Date.now()) / DAY);
     if (s.active === false) return { k: 'off', label: 'বন্ধ করা', cls: 'bg-slate-200 text-slate-700', left };
@@ -220,16 +301,36 @@
     return { k: 'ok', label: 'সক্রিয়', cls: 'bg-emerald-100 text-emerald-800', left };
   }
   const endOfDay = ms => { const d = new Date(ms); d.setHours(23, 59, 59, 0); return d; };
+  const dt = ms => ms ? new Date(ms).toLocaleString('bn-BD', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 
-  /* ---------- রেন্ডার ---------- */
-  function render() {
-    const list = [...shops.entries()].map(([id, s]) => ({ id, ...s, st: statusOf(s) }))
-      .sort((a, b) => (b.createdAt ? b.createdAt.toMillis() : 0) - (a.createdAt ? a.createdAt.toMillis() : 0));
-
+  /* ---------- স্ট্যাটস ---------- */
+  function renderStats() {
+    const list = [...shops.values()].map(s => statusOf(s));
     $('st-total').textContent = bn(list.length);
-    $('st-active').textContent = bn(list.filter(x => x.st.k === 'ok' || x.st.k === 'soon').length);
-    $('st-soon').textContent = bn(list.filter(x => x.st.k === 'soon').length);
-    $('st-off').textContent = bn(list.filter(x => x.st.k === 'exp' || x.st.k === 'off').length);
+    $('st-active').textContent = bn(list.filter(x => x.k === 'ok' || x.k === 'soon').length);
+    $('st-soon').textContent = bn(list.filter(x => x.k === 'soon').length);
+    $('st-off').textContent = bn(list.filter(x => x.k === 'exp' || x.k === 'off').length);
+
+    const now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    let income = 0, pending = 0;
+    payments.forEach(p => {
+      if (p.status === 'approved' && tsMs(p.decidedAt) >= m0) income += Number(p.amount) || 0;
+      if (p.status === 'pending') pending++;
+    });
+    $('st-income').textContent = '৳ ' + bn(income);
+
+    $('pay-pending-count').textContent = pending ? bn(pending) + ' টি নতুন' : '';
+    $('pending-banner').classList.toggle('hidden', !pending);
+    $('pending-banner').classList.toggle('flex', !!pending);
+    $('pending-banner-text').textContent = '🔔 ' + bn(pending) + ' টি পেমেন্ট কনফার্মের অপেক্ষায় আছে';
+    document.title = (pending ? '(' + pending + ') ' : '') + 'POS অ্যাডমিন প্যানেল';
+  }
+
+  /* ---------- শপ তালিকা ---------- */
+  function render() {
+    renderStats();
+    const list = [...shops.entries()].map(([id, s]) => ({ id, ...s, st: statusOf(s) }))
+      .sort((a, b) => tsMs(b.createdAt) - tsMs(a.createdAt));
 
     const q = $('q').value.trim().toLowerCase();
     const shown = list.filter(x => !q || [x.name, x.owner, x.phone, x.id].some(v => String(v || '').toLowerCase().includes(q)));
@@ -274,6 +375,160 @@
   }
   $('q').addEventListener('input', render);
 
+  /* ---------- পেমেন্ট রিকোয়েস্ট তালিকা ---------- */
+  function setPayFilter(f) {
+    payFilter = f;
+    ['pending', 'all'].forEach(k => {
+      const b = $('pf-' + k);
+      b.className = 'pf px-3 py-1.5 rounded-lg ' + (k === f ? 'font-bold bg-white text-green-700' : 'font-semibold text-slate-600');
+    });
+    renderPayments();
+  }
+  $('pf-pending').onclick = () => setPayFilter('pending');
+  $('pf-all').onclick = () => setPayFilter('all');
+
+  function renderPayments() {
+    const all = [...payments.entries()].map(([id, p]) => ({ id, ...p }));
+    const trxCount = {};
+    all.forEach(p => { const k = String(p.trxId || '').toLowerCase(); if (k) trxCount[k] = (trxCount[k] || 0) + 1; });
+
+    let list = all.sort((a, b) => tsMs(b.createdAt) - tsMs(a.createdAt));
+    if (payFilter === 'pending') list = list.filter(p => p.status === 'pending');
+    list = list.slice(0, 100);
+
+    if (!list.length) {
+      $('pay-tbody').innerHTML = `<tr><td colspan="4" class="py-10 text-center text-slate-400">${payFilter === 'pending' ? 'কোনো অপেক্ষমাণ পেমেন্ট নেই' : 'কোনো পেমেন্ট হয়নি'}</td></tr>`;
+      return;
+    }
+
+    $('pay-tbody').innerHTML = list.map(p => {
+      const plan = (payCfg.plans || []).find(x => x.name === p.planName);
+      const mismatch = plan && (Number(plan.days) !== Number(p.planDays) || Number(plan.price) !== Number(p.amount));
+      const dup = trxCount[String(p.trxId || '').toLowerCase()] > 1;
+      const badges =
+        (mismatch ? '<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">⚠️ প্যাকেজের সাথে মিলছে না</span> ' : '') +
+        (dup ? '<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">⚠️ একই TrxID একাধিকবার</span>' : '');
+      let action;
+      if (p.status === 'pending') {
+        action = `<div class="flex gap-1.5 text-[11px] font-bold" data-pid="${esc(p.id)}">
+          <button data-pact="approve" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg">✅ কনফার্ম</button>
+          <button data-pact="reject" class="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg">❌ বাতিল</button></div>`;
+      } else if (p.status === 'approved') {
+        action = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">কনফার্মড</span><div class="text-[10px] text-slate-400 mt-0.5">${dt(tsMs(p.decidedAt))}</div>`;
+      } else {
+        action = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">বাতিল</span>${p.adminNote ? `<div class="text-[10px] text-slate-500 mt-0.5">${esc(p.adminNote)}</div>` : ''}`;
+      }
+      return `
+      <tr class="hover:bg-slate-50 align-top">
+        <td class="py-3 px-4">
+          <div class="font-bold">${esc(p.shopName || p.shopId)}</div>
+          <div class="text-[11px] text-slate-500">${esc(p.planName)} • ${bn(p.planDays)} দিন</div>
+          <div class="font-mono font-bold text-green-700">৳ ${bn(p.amount)}</div>
+        </td>
+        <td class="py-3 px-3 text-xs space-y-0.5">
+          <div><b>${esc(p.method)}</b> → ${esc(p.toNumber)}</div>
+          <div>পাঠিয়েছে: <span class="font-mono">${esc(p.sender)}</span></div>
+          <div>TrxID: <span class="font-mono font-bold">${esc(p.trxId)}</span></div>
+          <div>${badges}</div>
+        </td>
+        <td class="py-3 px-3 text-xs text-slate-500">${dt(tsMs(p.createdAt))}</td>
+        <td class="py-3 px-4">${action}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function approvePay(pid) {
+    const p = payments.get(pid);
+    if (!p || p.status !== 'pending') return;
+    const s = shops.get(p.shopId);
+    if (!s) { toast('এই দোকান আর নেই'); return; }
+    const days = Number(p.planDays);
+    if (!Number.isInteger(days) || days < 1 || days > 3660) { toast('মেয়াদের দিন সঠিক নয় — বাতিল করুন'); return; }
+    const ok = confirm(
+      `${p.shopName || p.shopId}\n` +
+      `৳${p.amount} — ${days} দিন (${p.planName})\n` +
+      `${p.method} | ${p.sender} | TrxID: ${p.trxId}\n\n` +
+      `আপনার অ্যাপে টাকা পেয়েছেন? কনফার্ম করলে POS চালু হবে ও মেয়াদ বাড়বে।`);
+    if (!ok) return;
+    const base = Math.max(Date.now(), expMs(s));
+    const b = writeBatch(db);
+    b.update(doc(db, 'shops', p.shopId), { expiresAt: Timestamp.fromDate(endOfDay(base + days * DAY)), active: true });
+    b.update(doc(db, 'payments', pid), { status: 'approved', decidedAt: Timestamp.now() });
+    await b.commit();
+    toast('✅ কনফার্ম হয়েছে — POS চালু হচ্ছে');
+  }
+
+  async function rejectPay(pid) {
+    const p = payments.get(pid);
+    if (!p || p.status !== 'pending') return;
+    const reason = prompt('বাতিলের কারণ (দোকানদার দেখবে):', 'টাকা পাওয়া যায়নি / TrxID মেলেনি');
+    if (reason === null) return;
+    await updateDoc(doc(db, 'payments', pid), { status: 'rejected', adminNote: reason.trim(), decidedAt: Timestamp.now() });
+    toast('বাতিল করা হয়েছে');
+  }
+
+  $('pay-tbody').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-pact]');
+    if (!btn) return;
+    const pid = btn.parentElement.dataset.pid;
+    try {
+      if (btn.dataset.pact === 'approve') await approvePay(pid);
+      else await rejectPay(pid);
+    } catch (err) { console.error(err); toast('ব্যর্থ: ' + (err.code || err.message)); }
+  });
+
+  /* ---------- পেমেন্ট সেটিংস ফর্ম ---------- */
+  function methodRow(m = {}) {
+    const d = document.createElement('div');
+    d.className = 'pm-row grid grid-cols-12 gap-1.5';
+    d.innerHTML =
+      `<select class="pm-type col-span-3 px-1.5 py-2 border border-slate-300 rounded-lg">${TYPES.map(t => `<option ${t === m.type ? 'selected' : ''}>${t}</option>`).join('')}</select>` +
+      `<input class="pm-number col-span-4 px-2 py-2 border border-slate-300 rounded-lg font-mono" placeholder="নম্বর / অ্যাকাউন্ট নং" value="${esc(m.number)}">` +
+      `<input class="pm-label col-span-4 px-2 py-2 border border-slate-300 rounded-lg" placeholder="Personal / Agent / ব্যাংক ও শাখা" value="${esc(m.label)}">` +
+      `<button type="button" class="row-del col-span-1 text-slate-400 hover:text-rose-600 font-bold">✕</button>`;
+    $('pm-list').appendChild(d);
+  }
+  function planRow(p = {}) {
+    const d = document.createElement('div');
+    d.className = 'pl-row grid grid-cols-12 gap-1.5';
+    d.innerHTML =
+      `<input class="pl-name col-span-5 px-2 py-2 border border-slate-300 rounded-lg" placeholder="নাম (যেমন: ১ মাস)" value="${esc(p.name)}">` +
+      `<input class="pl-days col-span-3 px-2 py-2 border border-slate-300 rounded-lg font-mono" type="number" min="1" placeholder="দিন" value="${esc(p.days)}">` +
+      `<input class="pl-price col-span-3 px-2 py-2 border border-slate-300 rounded-lg font-mono" type="number" min="1" placeholder="টাকা" value="${esc(p.price)}">` +
+      `<button type="button" class="row-del col-span-1 text-slate-400 hover:text-rose-600 font-bold">✕</button>`;
+    $('pl-list').appendChild(d);
+  }
+  function fillCfgForm() {
+    $('pm-list').innerHTML = ''; $('pl-list').innerHTML = '';
+    (payCfg.methods && payCfg.methods.length ? payCfg.methods : [{}]).forEach(methodRow);
+    (payCfg.plans && payCfg.plans.length ? payCfg.plans : [{}]).forEach(planRow);
+    $('pay-note').value = payCfg.note || '';
+  }
+  $('pm-add').onclick = () => methodRow();
+  $('pl-add').onclick = () => planRow();
+  ['pm-list', 'pl-list'].forEach(id => $(id).addEventListener('click', e => {
+    if (e.target.classList.contains('row-del')) e.target.parentElement.remove();
+  }));
+
+  $('pay-save').onclick = async () => {
+    const methods = [...document.querySelectorAll('.pm-row')].map(r => ({
+      type: r.querySelector('.pm-type').value,
+      number: r.querySelector('.pm-number').value.trim(),
+      label: r.querySelector('.pm-label').value.trim()
+    })).filter(m => m.number);
+    const plans = [...document.querySelectorAll('.pl-row')].map(r => ({
+      name: r.querySelector('.pl-name').value.trim(),
+      days: parseInt(r.querySelector('.pl-days').value) || 0,
+      price: parseInt(r.querySelector('.pl-price').value) || 0
+    })).filter(p => p.name && p.days > 0 && p.price > 0);
+    if (!methods.length) { toast('কমপক্ষে একটি অ্যাকাউন্ট দিন'); return; }
+    if (!plans.length) { toast('কমপক্ষে একটি প্যাকেজ (নাম, দিন, টাকা) দিন'); return; }
+    try {
+      await setDoc(doc(db, 'config', 'payment'), { methods, plans, note: $('pay-note').value.trim() });
+      toast('✅ পেমেন্ট সেটিংস সেভ হয়েছে');
+    } catch (err) { console.error(err); toast('সেভ হয়নি: ' + (err.code || err.message)); }
+  };
+
   /* ---------- নতুন POS ---------- */
   document.querySelectorAll('.dayq').forEach(b => b.onclick = () => { $('c-days').value = b.dataset.days; });
 
@@ -305,7 +560,7 @@
     }
   });
 
-  /* ---------- সারির অ্যাকশন ---------- */
+  /* ---------- দোকান সারির অ্যাকশন ---------- */
   async function extend(id, days) {
     const s = shops.get(id);
     const base = Math.max(Date.now(), expMs(s));
